@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineSphere - المنصة الأسطورية</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #3b8526;
+            --primary-light: #4caf30;
+            --secondary: #2a641c;
+            --dark: #1a1a1a;
+            --darker: #0a0a0a;
+            --light: #ffffff;
+            --gold: #f0c040;
+            --stone: #cccccc;
+            --card-bg: rgba(0, 0, 0, 0.25);
+            --card-border: rgba(255, 255, 255, 0.15);
+            --text-shadow: 2px 2px 4px #000;
+            --bedrock: #2563eb;
+        }
+
+        body.light-mode {
+            --dark: #f0f0f0;
+            --darker: #e0e0e0;
+            --light: #1a1a1a;
+            --stone: #333;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(0, 0, 0, 0.15);
+            --text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        body.light-mode .overlay { background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%); }
+        body.light-mode .bg-slide.active { opacity: 0.5; }
+        body.light-mode .card-header h3 { color: #1a1a1a; text-shadow: 1px 1px 2px rgba(255,255,255,0.5); }
+        body.light-mode .modal { background: #f0f0f0; color: #1a1a1a; }
+        body.light-mode .modal-row { background: rgba(255,255,255,0.6); }
+        body.light-mode .modal-row .value { color: #1a1a1a; }
+        body.light-mode nav { background: rgba(240, 240, 240, 0.95); }
+        body.light-mode .side-menu { background: rgba(240, 240, 240, 0.98); }
+        body.light-mode .side-menu a { color: #1a1a1a; }
+        body.light-mode .tool-row input, body.light-mode .tool-row select { background: rgba(255,255,255,0.7); color: #1a1a1a; }
+        body.light-mode .tool-result { background: rgba(255,255,255,0.6); color: var(--primary); }
+        body.light-mode .notif-panel { background: #f0f0f0; }
+        body.light-mode .notif-item { background: rgba(255,255,255,0.6); }
+        body.light-mode .notif-item .ni-title { color: #1a1a1a; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--darker);
+            color: var(--light);
+            overflow-x: hidden;
+            line-height: 1.5;
+            font-size: 13px;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        /* Splash */
+        #splash {
+            position: fixed; inset: 0;
+            background: #0a0a0a;
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        #splash.hidden { opacity: 0; visibility: hidden; }
+        .splash-title {
+            font-size: 2.5rem; font-weight: 900;
+            color: var(--primary);
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 25px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .splash-bar-container {
+            width: 300px; height: 14px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .splash-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            transition: width 0.3s ease;
+            box-shadow: 0 0 15px var(--primary);
+        }
+        .splash-percent { margin-top: 12px; color: var(--stone); font-size: 0.9rem; font-weight: 600; }
+        .splash-tip { margin-top: 30px; color: #888; font-size: 0.8rem; max-width: 400px; text-align: center; padding: 0 20px; }
+
+        /* Particles */
+        #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .particle {
+            position: absolute; width: 4px; height: 4px;
+            background: var(--primary); border-radius: 50%;
+            opacity: 0.6; box-shadow: 0 0 8px var(--primary);
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.6; } 90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* Backgrounds */
+        .bg-slider { position: fixed; inset: 0; z-index: -3; }
+        .bg-slide {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 1.5s ease-in-out, transform 0.1s ease-out;
+        }
+        .bg-slide.active { opacity: 1; }
+        .bg-slide:nth-child(1) { background-image: url('https://i.ibb.co/60kmVh3j/images-25.jpg'); }
+        .bg-slide:nth-child(2) { background-image: url('https://i.ibb.co/Cp7qMCb5/images-24.jpg'); }
+        .bg-slide:nth-child(3) { background-image: url('https://i.ibb.co/PzfGGGy8/images-21.jpg'); }
+        .bg-slide:nth-child(4) { background-image: url('https://i.ibb.co/35smmNDZ/7.jpg'); }
+        .bg-slide:nth-child(5) { background-image: url('https://i.ibb.co/Pvvbsy09/images-30.jpg'); }
+        .bg-slide:nth-child(6) { background-image: url('https://i.ibb.co/Rp5JsNrz/images-26.jpg'); }
+        .bg-slide:nth-child(7) { background-image: url('https://i.ibb.co/pvGfdPT6/images-27.jpg'); }
+        .bg-slide:nth-child(8) { background-image: url('https://i.ibb.co/t1NBg7S/images-28.jpg'); }
+        .bg-slide:nth-child(9) { background-image: url('https://i.ibb.co/TxLKhCGj/images-29.jpg'); }
+
+        .overlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.25) 100%);
+            z-index: -1; transition: background 0.4s;
+        }
+
+        /* Nav */
+        nav {
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky; top: 0; z-index: 100;
+            border-bottom: 3px solid var(--primary);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            gap: 10px;
+        }
+        .logo {
+            font-size: 1.2rem; font-weight: 900;
+            color: var(--primary);
+            text-shadow: var(--text-shadow);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .logo span { color: var(--light); }
+        .nav-links {
+            display: flex; gap: 14px; list-style: none; align-items: center;
+            flex: 1; justify-content: center;
+            overflow-x: auto;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .nav-links::-webkit-scrollbar { display: none; }
+        .nav-links a {
+            color: var(--light); text-decoration: none;
+            font-weight: 600; font-size: 0.8rem;
+            transition: 0.3s; position: relative;
+            white-space: nowrap; padding: 4px 0;
+        }
+        .nav-links a:hover { color: var(--primary); }
+        .nav-links a::after {
+            content: ''; position: absolute;
+            bottom: -2px; right: 0; width: 0; height: 2px;
+            background: var(--primary); transition: 0.3s;
+        }
+        .nav-links a:hover::after { width: 100%; }
+
+        .hamburger-btn {
+            background: var(--primary);
+            color: #fff; border: none;
+            width: 36px; height: 36px;
+            border-radius: 8px; cursor: pointer;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 4px; transition: 0.3s; padding: 0; flex-shrink: 0;
+        }
+        .hamburger-btn:hover { background: var(--primary-light); }
+        .hamburger-btn span {
+            display: block; width: 18px; height: 2.5px;
+            background: #fff; border-radius: 2px; transition: 0.3s;
+        }
+        .hamburger-btn.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+        .hamburger-btn.active span:nth-child(2) { opacity: 0; }
+        .hamburger-btn.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+        /* Side Menu */
+        .side-menu {
+            position: fixed;
+            top: 0; right: -320px;
+            width: 300px; height: 100vh;
+            background: rgba(17, 17, 17, 0.98);
+            backdrop-filter: blur(15px);
+            border-left: 3px solid var(--primary);
+            z-index: 999;
+            transition: right 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            padding: 80px 25px 25px;
+            overflow-y: auto;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+        }
+        .side-menu.open { right: 0; }
+        .side-menu-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 998; opacity: 0; visibility: hidden;
+            transition: 0.3s;
+        }
+        .side-menu-overlay.open { opacity: 1; visibility: visible; }
+        .side-menu h3 {
+            color: var(--primary); font-size: 1.1rem;
+            margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary);
+            text-shadow: var(--text-shadow);
+        }
+        .side-menu ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .side-menu ul a {
+            display: flex; align-items: center; gap: 12px;
+            color: var(--light); text-decoration: none;
+            padding: 12px 14px; border-radius: 8px;
+            font-weight: 600; font-size: 0.85rem;
+            transition: 0.3s; border: 1px solid transparent;
+        }
+        .side-menu ul a:hover {
+            background: var(--primary); color: #fff;
+            border-color: var(--primary-light);
+            transform: translateX(-5px);
+        }
+        .side-menu ul a .menu-icon {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: var(--primary); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 0.85rem; flex-shrink: 0;
+        }
+        .side-menu ul a:hover .menu-icon { background: #fff; color: var(--primary); }
+        .side-menu-footer {
+            margin-top: 30px; padding-top: 20px;
+            border-top: 1px solid #333;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .theme-btn, .login-btn, .music-btn {
+            background: var(--primary); color: #fff; border: none;
+            padding: 12px 14px; border-radius: 8px;
+            cursor: pointer; font-family: inherit;
+            font-size: 0.82rem; font-weight: 700;
+            transition: 0.3s; width: 100%; text-align: center;
+        }
+        .theme-btn:hover, .login-btn:hover, .music-btn:hover { background: var(--primary-light); }
+        .login-btn.logged-in { background: #5865F2; }
+        .music-btn.playing { background: #f0c040; color: #000; }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 35px 15px 25px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            position: relative; z-index: 1;
+        }
+        .hero h1 {
+            font-size: 1.8rem; font-weight: 900;
+            color: #fff;
+            text-shadow: 3px 3px 0px #000, 0 0 30px rgba(0,0,0,0.8);
+            margin-bottom: 15px; line-height: 1.2; min-height: 2.5rem;
+        }
+        .hero h1 .cursor {
+            display: inline-block; width: 3px; height: 1.8rem;
+            background: var(--primary); margin-right: 4px;
+            animation: blink 0.8s infinite; vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .countdown-container {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid var(--primary);
+            border-radius: 10px; padding: 10px 18px;
+            margin-bottom: 18px; backdrop-filter: blur(8px);
+        }
+        .countdown-title { color: var(--primary); font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; }
+        .countdown-timer { display: flex; gap: 12px; justify-content: center; }
+        .countdown-item { text-align: center; }
+        .countdown-item .num { font-size: 1.3rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000; }
+        .countdown-item .label { font-size: 0.65rem; color: var(--stone); }
+        .hero-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+        .btn {
+            background: var(--primary); color: #fff;
+            padding: 10px 24px; border: none; border-radius: 5px;
+            font-family: inherit; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 0px var(--secondary), 0 6px 12px rgba(0,0,0,0.5);
+            text-decoration: none; display: inline-block;
+        }
+        .btn:hover {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0px var(--secondary), 0 4px 8px rgba(0,0,0,0.5);
+            background: var(--primary-light);
+        }
+
+        /* Sections */
+        .section {
+            padding: 25px 4%;
+            max-width: 1400px; margin: 0 auto;
+            position: relative; z-index: 1;
+        }
+        .section-title {
+            font-size: 1.15rem; margin-bottom: 15px;
+            border-right: 4px solid var(--primary);
+            padding-right: 12px; color: var(--light);
+            font-weight: 700; text-shadow: var(--text-shadow);
+        }
+        .section-title small {
+            font-size: 0.65rem; color: var(--stone);
+            font-weight: 400; display: block; margin-top: 2px;
+        }
+        .section-title.bedrock { border-right-color: var(--bedrock); }
+
+        /* Tools Bar */
+        .tools-bar { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .search-input {
+            flex: 1; min-width: 180px; padding: 8px 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 6px; color: var(--light);
+            font-family: inherit; font-size: 0.8rem;
+            outline: none; transition: 0.3s;
+            backdrop-filter: blur(6px);
+        }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(59,133,38,0.4); }
+        .filter-btn {
+            padding: 7px 14px; background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px; color: var(--light);
+            font-family: inherit; font-size: 0.7rem;
+            font-weight: 700; cursor: pointer;
+            transition: 0.3s; backdrop-filter: blur(6px);
+        }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 12px;
+            transition: transform 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(6px);
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+            min-height: 100px;
+            transform-style: preserve-3d; will-change: transform;
+        }
+        .card::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; width: 100%; height: 3px;
+            background: var(--primary);
+            transform: scaleX(0); transition: 0.4s;
+            transform-origin: right;
+        }
+        .card:hover::before { transform: scaleX(1); transform-origin: left; }
+        .card:hover {
+            background: rgba(0, 0, 0, 0.45);
+            border-color: var(--primary);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 20px rgba(59,133,38,0.2);
+        }
+        body.light-mode .card:hover { background: rgba(255,255,255,0.9); }
+        .card.bedrock-card:hover { border-color: var(--bedrock); box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 20px rgba(37,99,235,0.3); }
+        .card.bedrock-card::before { background: var(--bedrock); }
+        .card.seed-card::before { background: var(--gold); }
+        .card.seed-card:hover { border-color: var(--gold); box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 20px rgba(240,192,64,0.3); }
+
+        .card-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 8px; gap: 6px;
+        }
+        .card-header h3 {
+            color: var(--light); font-size: 0.9rem; font-weight: 900;
+            flex: 1; text-shadow: var(--text-shadow);
+            letter-spacing: 0.2px; word-break: break-word;
+        }
+        .card-actions-top { display: flex; gap: 5px; align-items: center; }
+        .fav-btn {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: rgba(0,0,0,0.4); color: var(--gold);
+            border: 1px solid var(--gold); font-size: 0.7rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; flex-shrink: 0; font-family: inherit;
+        }
+        .fav-btn:hover { transform: scale(1.15); background: var(--gold); color: #000; }
+        .fav-btn.active { background: var(--gold); color: #000; }
+        .info-btn {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--primary); color: #fff;
+            border: 1.5px solid #fff; font-size: 0.7rem;
+            font-weight: 900; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+            font-family: inherit;
+        }
+        .info-btn:hover { background: var(--primary-light); transform: rotate(15deg) scale(1.1); }
+        .info-btn.bedrock-info { background: var(--bedrock); }
+        .info-btn.bedrock-info:hover { background: #3b82f6; }
+        .info-btn.seed-info { background: var(--gold); color: #000; }
+        .info-btn.seed-info:hover { background: #ffd970; }
+
+        .download-btn {
+            display: block; text-align: center;
+            background: var(--primary); border: none; color: #fff;
+            padding: 8px; border-radius: 5px;
+            text-decoration: none; font-weight: 700; font-size: 0.75rem;
+            transition: 0.3s; cursor: pointer;
+            width: 100%; font-family: inherit;
+            box-shadow: 0 3px 0px var(--secondary);
+            margin-top: auto;
+        }
+        .download-btn:hover { background: var(--primary-light); transform: translateY(2px); box-shadow: 0 1px 0px var(--secondary); }
+        .download-btn.bedrock-dl { background: var(--bedrock); box-shadow: 0 3px 0px #1e3a8a; }
+        .download-btn.bedrock-dl:hover { background: #3b82f6; }
+        .download-btn.seed-copy { background: var(--gold); color: #000; box-shadow: 0 3px 0px #a07a10; }
+        .download-btn.seed-copy:hover { background: #ffd970; }
+
+        .card-meta {
+            display: flex; gap: 8px;
+            font-size: 0.65rem; color: var(--stone);
+            margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .card-desc { color: var(--stone); font-size: 0.72rem; margin-bottom: 8px; line-height: 1.4; }
+
+        /* Loader */
+        .loader { text-align: center; padding: 20px; color: var(--primary); display: none; }
+        .loader.active { display: block; }
+        .spinner {
+            width: 30px; height: 30px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Soundboard */
+        .soundboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+        .sound-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 10px 6px;
+            color: var(--light); font-family: inherit;
+            font-size: 0.7rem; font-weight: 700;
+            cursor: pointer; transition: 0.3s;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 5px;
+            backdrop-filter: blur(6px);
+        }
+        .sound-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; transform: translateY(-2px); }
+        .sound-btn.playing { background: var(--primary-light); border-color: #fff; box-shadow: 0 0 20px var(--primary); }
+        .sound-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: 900; color: #fff;
+        }
+        .sound-btn:hover .sound-icon { background: #fff; color: var(--primary); }
+
+        /* Servers */
+        .server-card {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 10px;
+            backdrop-filter: blur(6px); transition: 0.3s;
+        }
+        .server-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .server-icon {
+            width: 42px; height: 42px;
+            background: var(--primary); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.1rem; color: #fff; flex-shrink: 0;
+        }
+        .server-info { flex: 1; }
+        .server-info h4 { color: var(--light); font-size: 0.85rem; margin-bottom: 2px; }
+        .server-info .ip { color: var(--stone); font-size: 0.68rem; font-family: monospace; }
+        .server-info .online { color: var(--primary); font-size: 0.68rem; font-weight: 700; }
+        .copy-btn {
+            background: var(--primary); color: #fff; border: none;
+            padding: 6px 10px; border-radius: 5px;
+            font-family: inherit; font-size: 0.68rem;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .copy-btn:hover { background: var(--primary-light); }
+
+        /* Videos */
+        .video-card { padding: 0; overflow: hidden; min-height: 180px; }
+        .video-thumb {
+            width: 100%; aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: var(--primary);
+            cursor: pointer; transition: 0.3s;
+        }
+        .video-thumb:hover { background: linear-gradient(135deg, #3a3a3a, #2a2a2a); }
+        .video-thumb:hover .play-icon { transform: scale(1.2); }
+        .play-icon { transition: 0.3s; }
+        .video-info { padding: 10px; }
+        .video-info h4 { font-size: 0.78rem; color: var(--light); margin-bottom: 4px; line-height: 1.3; }
+        .video-info .channel { font-size: 0.68rem; color: var(--stone); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            z-index: 1000; display: none;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal {
+            background: var(--dark);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            max-width: 500px; width: 100%;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            animation: slideUp 0.3s ease;
+            max-height: 90vh; overflow-y: auto;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 15px;
+            border-bottom: 1px solid #333; padding-bottom: 12px;
+        }
+        .modal-header h3 { color: var(--primary); font-size: 1.1rem; font-weight: 900; }
+        .modal-close {
+            background: transparent; border: none;
+            color: var(--stone); font-size: 1.4rem;
+            cursor: pointer; transition: 0.3s;
+            font-family: inherit; line-height: 1;
+        }
+        .modal-close:hover { color: #ff4444; transform: rotate(90deg); }
+        .modal-body { display: flex; flex-direction: column; gap: 8px; }
+        .modal-row {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 8px 10px;
+            background: rgba(0,0,0,0.4); border-radius: 6px;
+            border-right: 3px solid var(--primary);
+        }
+        .modal-row .label { color: var(--stone); font-size: 0.72rem; font-weight: 600; }
+        .modal-row .value { color: var(--light); font-size: 0.78rem; font-weight: 700; }
+        .modal-row .value.highlight { color: var(--primary); }
+        .modal-desc {
+            background: rgba(0,0,0,0.4);
+            padding: 10px; border-radius: 6px;
+            color: var(--stone); font-size: 0.72rem;
+            line-height: 1.6; border-right: 3px solid var(--gold);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center; padding: 20px;
+            background: rgba(17, 17, 17, 0.95);
+            border-top: 2px solid #222;
+            color: #777; margin-top: 30px;
+            font-size: 0.7rem;
+            position: relative; z-index: 1;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--dark);
+            border: 2px solid var(--primary);
+            color: var(--light);
+            padding: 10px 18px; border-radius: 8px;
+            font-size: 0.78rem; font-weight: 600;
+            z-index: 2000; opacity: 0; transition: 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            font-family: inherit;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* Scroll Top */
+        .scroll-top {
+            position: fixed; bottom: 20px; left: 20px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--primary); color: #fff;
+            border: none; font-size: 1rem;
+            cursor: pointer; z-index: 500;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            opacity: 0; visibility: hidden;
+        }
+        .scroll-top.visible { opacity: 1; visibility: visible; }
+        .scroll-top:hover { background: var(--primary-light); transform: translateY(-3px); }
+
+        /* ================== إشعار الإصدار الجديد ================== */
+        .version-notification {
+            position: fixed; top: 70px; right: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff; padding: 12px 16px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(59,133,38,0.4);
+            z-index: 1500;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.78rem; font-weight: 700;
+            max-width: 320px;
+            transform: translateX(400px);
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            border: 2px solid var(--primary-light);
+        }
+        .version-notification.show { transform: translateX(0); }
+        .version-notification .vn-icon {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .version-notification .vn-content { flex: 1; }
+        .version-notification .vn-title { font-size: 0.85rem; margin-bottom: 2px; }
+        .version-notification .vn-sub { font-size: 0.68rem; opacity: 0.9; font-weight: 400; }
+        .version-notification .vn-close {
+            background: transparent; border: none; color: #fff;
+            font-size: 1.1rem; cursor: pointer; opacity: 0.7;
+            transition: 0.3s; padding: 0 4px; font-family: inherit;
+        }
+        .version-notification .vn-close:hover { opacity: 1; transform: rotate(90deg); }
+
+        /* ================== زر الإشعارات العائم ================== */
+        .notif-bell {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--primary); color: #fff;
+            border: 2px solid var(--primary-light);
+            font-size: 1.2rem; cursor: pointer;
+            z-index: 500;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6), 0 0 15px rgba(59,133,38,0.5);
+            transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .notif-bell:hover { background: var(--primary-light); transform: scale(1.1); }
+        .notif-bell .bell-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #ff4444; color: #fff;
+            font-size: 0.6rem; font-weight: 900;
+            min-width: 18px; height: 18px;
+            border-radius: 9px;
+            display: none; align-items: center; justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--darker);
+        }
+        .notif-bell .bell-badge.show { display: flex; }
+
+        /* ================== لوحة الإشعارات ================== */
+        .notif-panel {
+            position: fixed; bottom: 80px; right: 20px;
+            width: 320px; max-height: 400px;
+            background: var(--dark);
+            border: 2px solid var(--primary);
+            border-radius: 12px; z-index: 501;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            transform: scale(0.8) translateY(20px);
+            opacity: 0; visibility: hidden;
+            transition: 0.3s;
+        }
+        .notif-panel.open { transform: scale(1) translateY(0); opacity: 1; visibility: visible; }
+        .notif-panel-header {
+            padding: 12px 15px;
+            background: var(--primary); color: #fff;
+            font-weight: 700; font-size: 0.85rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .notif-panel-header button {
+            background: rgba(255,255,255,0.2); border: none;
+            color: #fff; font-size: 0.65rem;
+            padding: 4px 8px; border-radius: 4px;
+            cursor: pointer; font-family: inherit; font-weight: 700;
+            transition: 0.3s;
+        }
+        .notif-panel-header button:hover { background: rgba(255,255,255,0.35); }
+        .notif-panel-body { max-height: 340px; overflow-y: auto; padding: 8px; }
+        .notif-item {
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px; margin-bottom: 6px;
+            border-right: 3px solid var(--primary);
+            font-size: 0.72rem; transition: 0.3s;
+        }
+        .notif-item:hover { background: rgba(59,133,38,0.15); }
+        .notif-item .ni-title { color: var(--light); font-weight: 700; margin-bottom: 3px; }
+        .notif-item .ni-time { color: var(--stone); font-size: 0.62rem; }
+        .notif-item.unread { border-right-color: var(--gold); background: rgba(240,192,64,0.08); }
+        .notif-empty {
+            text-align: center; padding: 30px 15px;
+            color: var(--stone); font-size: 0.75rem;
+        }
+
+        /* ================== أدوات Minecraft ================== */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 15px;
+        }
+        .tool-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px; padding: 15px;
+            backdrop-filter: blur(6px); transition: 0.3s;
+        }
+        .tool-card:hover { border-color: var(--primary); }
+        .tool-card h3 {
+            color: var(--primary); font-size: 0.9rem;
+            margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--card-border);
+            text-shadow: var(--text-shadow);
+        }
+        .tool-row {
+            display: flex; gap: 8px; margin-bottom: 8px;
+            align-items: center; flex-wrap: wrap;
+        }
+        .tool-row label {
+            color: var(--stone); font-size: 0.72rem;
+            min-width: 80px; font-weight: 600;
+        }
+        .tool-row input, .tool-row select {
+            flex: 1; min-width: 100px; padding: 7px 10px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 6px; color: var(--light);
+            font-family: inherit; font-size: 0.75rem;
+            outline: none; transition: 0.3s;
+        }
+        .tool-row input:focus, .tool-row select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(59,133,38,0.3);
+        }
+        .tool-btn {
+            width: 100%; padding: 9px;
+            background: var(--primary); color: #fff;
+            border: none; border-radius: 6px;
+            font-family: inherit; font-size: 0.78rem;
+            font-weight: 700; cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 3px 0 var(--secondary);
+        }
+        .tool-btn:hover { background: var(--primary-light); transform: translateY(2px); box-shadow: 0 1px 0 var(--secondary); }
+        .tool-result {
+            margin-top: 10px; padding: 10px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px; color: var(--primary);
+            font-size: 0.78rem; font-weight: 700;
+            text-align: center;
+            border-right: 3px solid var(--primary);
+            min-height: 40px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            line-height: 1.5;
+        }
+        .tool-result small { color: var(--stone); font-weight: 400; display: block; margin-top: 3px; font-size: 0.65rem; }
+
+        /* ================== السكنات ================== */
+        .skins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        .skin-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 10px;
+            text-align: center; transition: 0.3s;
+            backdrop-filter: blur(6px); cursor: pointer;
+        }
+        .skin-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .skin-preview {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 8px;
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .skin-preview::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.4) 100%);
+        }
+        .skin-card h4 {
+            color: var(--light); font-size: 0.75rem;
+            font-weight: 700; margin-bottom: 5px;
+        }
+        .skin-category {
+            display: inline-block;
+            padding: 2px 8px; border-radius: 10px;
+            background: var(--primary); color: #fff;
+            font-size: 0.6rem; font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .skin-dl-btn {
+            display: block; width: 100%;
+            padding: 6px; background: var(--primary);
+            color: #fff; border: none; border-radius: 5px;
+            font-family: inherit; font-size: 0.68rem;
+            font-weight: 700; cursor: pointer;
+            transition: 0.3s; text-decoration: none;
+            box-shadow: 0 2px 0 var(--secondary);
+        }
+        .skin-dl-btn:hover { background: var(--primary-light); transform: translateY(1px); box-shadow: 0 1px 0 var(--secondary); }
+
+        /* ================== البذور ================== */
+        .seed-preview {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, #2a641c, #3b8526);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+        }
+        .seed-rating {
+            display: flex; gap: 2px; font-size: 0.7rem;
+            margin-bottom: 6px;
+        }
+        .seed-rating .star { color: #555; }
+        .seed-rating .star.filled { color: var(--gold); }
+        .seed-code {
+            font-family: monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 8px; border-radius: 4px;
+            font-size: 0.68rem; color: var(--gold);
+            text-align: center; margin-bottom: 6px;
+            word-break: break-all;
+            border: 1px dashed var(--gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { font-size: 12px; }
+            .hero h1 { font-size: 1.4rem; min-height: 2rem; }
+            .hero h1 .cursor { height: 1.3rem; }
+            nav { padding: 8px 12px; }
+            .logo { font-size: 1rem; }
+            .nav-links { gap: 10px; font-size: 0.7rem; }
+            .nav-links a { font-size: 0.7rem; }
+            .hamburger-btn { width: 32px; height: 32px; }
+            .hamburger-btn span { width: 16px; }
+            .section-title { font-size: 1rem; }
+            .grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .card { padding: 10px; min-height: 90px; }
+            .card-header h3 { font-size: 0.78rem; }
+            .countdown-item .num { font-size: 1rem; }
+            .soundboard-grid { grid-template-columns: repeat(3, 1fr); }
+            .side-menu { width: 85%; right: -85%; }
+            .notif-panel { width: calc(100% - 40px); right: 20px; }
+            .version-notification { top: auto; bottom: 80px; right: 20px; left: 20px; max-width: none; }
+            .tools-grid { grid-template-columns: 1fr; }
+            .skins-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .skins-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Splash -->
+    <div id="splash">
+        <div class="splash-title">MineSphere</div>
+        <div class="splash-bar-container">
+            <div class="splash-bar" id="splashBar"></div>
+        </div>
+        <div class="splash-percent" id="splashPercent">0%</div>
+        <div class="splash-tip" id="splashTip">جاري تحميل العالم المكعب...</div>
+    </div>
+
+    <!-- Particles -->
+    <div id="particles"></div>
+
+    <!-- Backgrounds -->
+    <div class="bg-slider" id="bgSlider">
+        <div class="bg-slide active"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+    </div>
+    <div class="overlay"></div>
+
+    <!-- Nav -->
+    <nav>
+        <div class="logo">Mine<span>Sphere</span></div>
+        <ul class="nav-links">
+            <li><a href="#home">الرئيسية</a></li>
+            <li><a href="#pc">الكمبيوتر</a></li>
+            <li><a href="#mobile">الموبايل</a></li>
+            <li><a href="#mods">المودات</a></li>
+            <li><a href="#seeds">البذور</a></li>
+        </ul>
+        <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSideMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- Side Menu -->
+    <div class="side-menu-overlay" id="sideMenuOverlay" onclick="toggleSideMenu()"></div>
+    <aside class="side-menu" id="sideMenu">
+        <h3>القائمة الجانبية</h3>
+        <ul>
+            <li><a href="#favorites" onclick="toggleSideMenu()"><div class="menu-icon">★</div> المفضلة</a></li>
+            <li><a href="#sounds" onclick="toggleSideMenu()"><div class="menu-icon">♪</div> الأصوات</a></li>
+            <li><a href="#servers" onclick="toggleSideMenu()"><div class="menu-icon">S</div> السيرفرات</a></li>
+            <li><a href="#videos" onclick="toggleSideMenu()"><div class="menu-icon">V</div> الفيديوهات</a></li>
+            <li><a href="#tools" onclick="toggleSideMenu()"><div class="menu-icon">⚙</div> الأدوات</a></li>
+            <li><a href="#skins" onclick="toggleSideMenu()"><div class="menu-icon">☻</div> السكنات</a></li>
+            <li><a href="#seeds" onclick="toggleSideMenu()"><div class="menu-icon">✿</div> البذور</a></li>
+        </ul>
+
+        <div class="side-menu-footer">
+            <button class="music-btn" onclick="toggleMusic()" id="musicBtn">🎵 تشغيل الموسيقى</button>
+            <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">الوضع النهاري</button>
+            <button class="login-btn" onclick="loginDiscord()" id="loginBtn">دخول Discord</button>
+        </div>
+    </aside>
+
+    <!-- Hero -->
+    <header class="hero" id="home">
+        <h1><span id="typedText"></span><span class="cursor"></span></h1>
+        
+        <div class="countdown-container">
+            <div class="countdown-title">الإصدار القادم: 1.21.5</div>
+            <div class="countdown-timer">
+                <div class="countdown-item"><div class="num" id="cdDays">00</div><div class="label">يوم</div></div>
+                <div class="countdown-item"><div class="num" id="cdHours">00</div><div class="label">ساعة</div></div>
+                <div class="countdown-item"><div class="num" id="cdMins">00</div><div class="label">دقيقة</div></div>
+                <div class="countdown-item"><div class="num" id="cdSecs">00</div><div class="label">ثانية</div></div>
+            </div>
+        </div>
+
+        <div class="hero-buttons">
+            <a href="#pc" class="btn" onmouseenter="playSound('hover')" onclick="playSound('click')">تحميل اللعبة</a>
+            <a href="#mods" class="btn" onmouseenter="playSound('hover')" onclick="playSound('click')">تصفح المودات</a>
+        </div>
+    </header>
+
+    <!-- PC Versions -->
+    <section class="section" id="pc">
+        <h2 class="section-title">
+            إصدارات الكمبيوتر (Java Edition)
+            <small id="pcCount">جاري التحميل...</small>
+        </h2>
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن إصدار...">
+            <button class="filter-btn active" data-filter="all">الكل</button>
+            <button class="filter-btn" data-filter="release">Release</button>
+            <button class="filter-btn" data-filter="snapshot">Snapshot</button>
+            <button class="filter-btn" data-filter="old">قديمة</button>
+        </div>
+        <div class="loader active" id="pcLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب الإصدارات...</p>
+        </div>
+        <div class="grid" id="pcGrid"></div>
+    </section>
+
+    <!-- Mobile Versions -->
+    <section class="section" id="mobile">
+        <h2 class="section-title bedrock">
+            إصدارات الموبايل (Bedrock Edition)
+            <small id="mobileCount">جاري التحميل...</small>
+        </h2>
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="mobileSearch" placeholder="ابحث عن إصدار Bedrock...">
+        </div>
+        <div class="loader active" id="mobileLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب إصدارات Bedrock...</p>
+        </div>
+        <div class="grid" id="mobileGrid"></div>
+    </section>
+
+    <!-- Mods -->
+    <section class="section" id="mods">
+        <h2 class="section-title">
+            أشهر المودات
+            <small id="modsCount">جاري جلب المودات...</small>
+        </h2>
+        <div class="loader active" id="modsLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب آلاف المودات...</p>
+        </div>
+        <div class="grid" id="modsGrid"></div>
+    </section>
+
+    <!-- Seeds -->
+    <section class="section" id="seeds">
+        <h2 class="section-title">
+            بذور Minecraft الأسطورية
+            <small id="seedsCount">جاري التحميل...</small>
+        </h2>
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="seedSearch" placeholder="ابحث عن بذرة...">
+            <button class="filter-btn active" data-seedfilter="all">الكل</button>
+            <button class="filter-btn" data-seedfilter="village">قرية</button>
+            <button class="filter-btn" data-seedfilter="rare">نادرة</button>
+            <button class="filter-btn" data-seedfilter="survival">بقاء</button>
+        </div>
+        <div class="loader active" id="seedsLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب البذور...</p>
+        </div>
+        <div class="grid" id="seedsGrid"></div>
+    </section>
+
+    <!-- Tools -->
+    <section class="section" id="tools" style="display:none;">
+        <h2 class="section-title">
+            أدوات Minecraft الذكية
+            <small>حاسبات ومولدات أوامر</small>
+        </h2>
+        <div class="tools-grid">
+            <!-- Enchantment Calculator -->
+            <div class="tool-card">
+                <h3>⚔ حاسبة الـ Enchantments</h3>
+                <div class="tool-row">
+                    <label>المستوى الحالي:</label>
+                    <input type="number" id="enchLevel" value="30" min="1" max="100">
+                </div>
+                <div class="tool-row">
+                    <label>عدد الكتب:</label>
+                    <input type="number" id="enchBooks" value="1" min="1" max="10">
+                </div>
+                <button class="tool-btn" onclick="calcEnchantment()">احسب الخبرة</button>
+                <div class="tool-result" id="enchResult">أدخل القيم واضغط احسب</div>
+            </div>
+
+            <!-- Command Generator -->
+            <div class="tool-card">
+                <h3>⌨ مولد الأوامر</h3>
+                <div class="tool-row">
+                    <label>الأمر:</label>
+                    <select id="cmdType">
+                        <option value="give">/give</option>
+                        <option value="tp">/tp</option>
+                        <option value="summon">/summon</option>
+                        <option value="effect">/effect</option>
+                    </select>
+                </div>
+                <div class="tool-row">
+                    <label>الهدف:</label>
+                    <input type="text" id="cmdTarget" value="@p" placeholder="@p">
+                </div>
+                <div class="tool-row">
+                    <label>القيمة:</label>
+                    <input type="text" id="cmdValue" value="diamond 1" placeholder="diamond 1">
+                </div>
+                <button class="tool-btn" onclick="generateCommand()">توليد الأمر</button>
+                <div class="tool-result" id="cmdResult">/give @p diamond 1</div>
+            </div>
+
+            <!-- Potion Calculator -->
+            <div class="tool-card">
+                <h3>🧪 حاسبة الجرعات</h3>
+                <div class="tool-row">
+                    <label>نوع الجرعة:</label>
+                    <select id="potionType">
+                        <option value="healing">Healing (شفاء)</option>
+                        <option value="strength">Strength (قوة)</option>
+                        <option value="speed">Speed (سرعة)</option>
+                        <option value="fire_resistance">Fire Resistance (مقاومة نار)</option>
+                        <option value="night_vision">Night Vision (رؤية ليلية)</option>
+                        <option value="invisibility">Invisibility (اختفاء)</option>
+                    </select>
+                </div>
+                <div class="tool-row">
+                    <label>المدة (ثواني):</label>
+                    <input type="number" id="potionDuration" value="180" min="1">
+                </div>
+                <button class="tool-btn" onclick="calcPotion()">احسب الجرعة</button>
+                <div class="tool-result" id="potionResult">اختر النوع والمدة</div>
+            </div>
+
+            <!-- XP Calculator -->
+            <div class="tool-card">
+                <h3>⭐ حاسبة الخبرة</h3>
+                <div class="tool-row">
+                    <label>من مستوى:</label>
+                    <input type="number" id="xpFrom" value="0" min="0">
+                </div>
+                <div class="tool-row">
+                    <label>إلى مستوى:</label>
+                    <input type="number" id="xpTo" value="30" min="1">
+                </div>
+                <button class="tool-btn" onclick="calcXP()">احسب الخبرة</button>
+                <div class="tool-result" id="xpResult">أدخل المستويات</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skins -->
+    <section class="section" id="skins" style="display:none;">
+        <h2 class="section-title">
+            سكنات Minecraft
+            <small id="skinsCount">جاري التحميل...</small>
+        </h2>
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="skinSearch" placeholder="ابحث عن سكن...">
+            <button class="filter-btn active" data-skinfilter="all">الكل</button>
+            <button class="filter-btn" data-skinfilter="hero">أبطال</button>
+            <button class="filter-btn" data-skinfilter="mob">وحوش</button>
+            <button class="filter-btn" data-skinfilter="cute">لطيف</button>
+        </div>
+        <div class="loader active" id="skinsLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب السكنات...</p>
+        </div>
+        <div class="skins-grid" id="skinsGrid"></div>
+    </section>
+
+    <!-- Favorites -->
+    <section class="section" id="favorites" style="display:none;">
+        <h2 class="section-title">
+            المفضلة
+            <small id="favCount">0 عنصر</small>
+        </h2>
+        <div class="grid" id="favGrid"></div>
+    </section>
+
+    <!-- Sounds -->
+    <section class="section" id="sounds" style="display:none;">
+        <h2 class="section-title">
+            لوحة الأصوات
+            <small>اضغط على أي صوت لسماعه</small>
+        </h2>
+        <div class="soundboard-grid" id="soundboardGrid"></div>
+    </section>
+
+    <!-- Servers -->
+    <section class="section" id="servers" style="display:none;">
+        <h2 class="section-title">
+            أفضل السيرفرات
+            <small>سيرفرات عربية وعالمية</small>
+        </h2>
+        <div class="grid" id="serversGrid"></div>
+    </section>
+
+    <!-- Videos -->
+    <section class="section" id="videos" style="display:none;">
+        <h2 class="section-title">
+            أحدث الفيديوهات
+            <small id="videosCount">جاري جلب الفيديوهات...</small>
+        </h2>
+        <div class="loader active" id="videosLoader">
+            <div class="spinner"></div>
+            <p>جاري جلب الفيديوهات...</p>
+        </div>
+        <div class="grid" id="videosGrid"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 MineSphere - جميع الحقوق محفوظة. غير تابع لشركة Mojang.</p>
+    </footer>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle">معلومات</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Scroll Top -->
+    <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">▲</button>
+
+    <!-- Notification Bell -->
+    <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()">
+        🔔
+        <span class="bell-badge" id="bellBadge">0</span>
+    </button>
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-header">
+            <span>🔔 الإشعارات</span>
+            <button onclick="clearAllNotifications()">مسح الكل</button>
+        </div>
+        <div class="notif-panel-body" id="notifBody">
+            <div class="notif-empty">لا توجد إشعارات</div>
+        </div>
+    </div>
+
+    <!-- Version Notification Toast -->
+    <div class="version-notification" id="versionNotif">
+        <div class="vn-icon">🎉</div>
+        <div class="vn-content">
+            <div class="vn-title" id="vnTitle">إصدار جديد متاح!</div>
+            <div class="vn-sub" id="vnSub">Minecraft 1.21.5</div>
+        </div>
+        <button class="vn-close" onclick="hideVersionNotif()">✕</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ================== 1. Sounds System ==================
+        const sounds = {
+            click: new Howl({ src: ['https://actions.google.com/sounds/v1/ui/ui_click.ogg'], volume: 0.5 }),
+            hover: new Howl({ src: ['https://actions.google.com/sounds/v1/ui/ui_hover.ogg'], volume: 0.2 }),
+            success: new Howl({ src: ['https://actions.google.com/sounds/v1/cartoon/pop.ogg'], volume: 0.6 }),
+            creeper: new Howl({ src: ['https://actions.google.com/sounds/v1/alarms/beep_short.ogg'], volume: 0.7, html5: true }),
+            xp: new Howl({ src: ['https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg'], volume: 0.5, html5: true }),
+            enderman: new Howl({ src: ['https://actions.google.com/sounds/v1/alarms/dosimeter_alarm.ogg'], volume: 0.4, html5: true }),
+            chest: new Howl({ src: ['https://actions.google.com/sounds/v1/cartoon/metal_drop.ogg'], volume: 0.5, html5: true }),
+            villager: new Howl({ src: ['https://actions.google.com/sounds/v1/human_voices/human_grunt.ogg'], volume: 0.6, html5: true }),
+            ghast: new Howl({ src: ['https://actions.google.com/sounds/v1/alarms/medium_alarm_loop.ogg'], volume: 0.4, html5: true }),
+            zombie: new Howl({ src: ['https://actions.google.com/sounds/v1/human_voices/human_exhale.ogg'], volume: 0.5, html5: true })
+        };
+
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (!audioUnlocked && Howler.ctx && Howler.ctx.state === 'suspended') {
+                Howler.ctx.resume();
+                audioUnlocked = true;
+            }
+        }
+        ['click', 'touchstart', 'keydown'].forEach(event => {
+            document.addEventListener(event, unlockAudio, { once: true });
+        });
+        function playSound(name) {
+            unlockAudio();
+            if (sounds[name]) {
+                try { sounds[name].play(); } catch(e) {}
+            }
+        }
+
+        // ================== 2. Background Music ==================
+        let bgMusic = null;
+        let musicPlaying = false;
+
+        function initMusic() {
+            bgMusic = new Howl({
+                src: ['https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3'],
+                loop: true,
+                volume: 0.15,
+                html5: true
+            });
+        }
+        initMusic();
+
+        function toggleMusic() {
+            unlockAudio();
+            const btn = document.getElementById('musicBtn');
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicPlaying = false;
+                btn.textContent = '🎵 تشغيل الموسيقى';
+                btn.classList.remove('playing');
+                showToast('تم إيقاف الموسيقى');
+            } else {
+                bgMusic.play();
+                musicPlaying = true;
+                btn.textContent = '⏸ إيقاف الموسيقى';
+                btn.classList.add('playing');
+                showToast('🎵 تشغيل الموسيقى...');
+            }
+            localStorage.setItem('msMusic', musicPlaying ? 'on' : 'off');
+        }
+
+        // ================== 3. Splash ==================
+        const splashTips = [
+            'جاري تحميل العالم المكعب...',
+            'تحضير الجزيئات...',
+            'جلب الإصدارات...',
+            'الاتصال بـ Modrinth...',
+            'اللمسات النهائية...'
+        ];
+        let splashProgress = 0;
+        const splashInterval = setInterval(() => {
+            splashProgress += Math.random() * 15;
+            if (splashProgress > 100) splashProgress = 100;
+            document.getElementById('splashBar').style.width = splashProgress + '%';
+            document.getElementById('splashPercent').textContent = Math.floor(splashProgress) + '%';
+            const tipIndex = Math.floor(splashProgress / 25);
+            if (splashTips[tipIndex]) document.getElementById('splashTip').textContent = splashTips[tipIndex];
+            if (splashProgress >= 100) {
+                clearInterval(splashInterval);
+                setTimeout(() => {
+                    document.getElementById('splash').classList.add('hidden');
+                    startTyping();
+                }, 500);
+            }
+        }, 250);
+
+        // ================== 4. Typing ==================
+        function startTyping() {
+            const text = 'مرحباً بك في MineSphere';
+            const target = document.getElementById('typedText');
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    target.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, 80);
+                }
+            }
+            type();
+        }
+
+        // ================== 5. Particles ==================
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (5 + Math.random() * 10) + 's';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                const size = 2 + Math.random() * 3;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                container.appendChild(p);
+            }
+        }
+        createParticles();
+
+        // ================== 6. Background Slides ==================
+        const slides = document.querySelectorAll('.bg-slide');
+        let currentSlide = 0;
+        setInterval(() => {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }, 6000);
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth - e.pageX * 2) / 100;
+            const y = (window.innerHeight - e.pageY * 2) / 100;
+            slides.forEach(slide => {
+                slide.style.transform = `translateX(${x}px) translateY(${y}px) scale(1.1)`;
+            });
+        });
+
+        // ================== 7. 3D Effect ==================
+        function apply3DEffect(card) {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                card.style.transform = `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg) translateY(-3px)`;
+            });
+            card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+        }
+
+        // ================== 8. Countdown ==================
+        const targetDate = new Date('2026-06-13T00:00:00').getTime();
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const diff = targetDate - now;
+            if (diff <= 0) {
+                ['cdDays','cdHours','cdMins','cdSecs'].forEach(id => document.getElementById(id).textContent = '00');
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const mins = Math.floor((diff / (1000 * 60)) % 60);
+            const secs = Math.floor((diff / 1000) % 60);
+            document.getElementById('cdDays').textContent = String(days).padStart(2, '0');
+            document.getElementById('cdHours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('cdMins').textContent = String(mins).padStart(2, '0');
+            document.getElementById('cdSecs').textContent = String(secs).padStart(2, '0');
+        }
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        // ================== 9. Favorites ==================
+        let favorites = JSON.parse(localStorage.getItem('msFavorites') || '[]');
+        function isFavorite(id) { return favorites.includes(id); }
+        function toggleFavorite(id, event) {
+            event.stopPropagation();
+            playSound('click');
+            if (isFavorite(id)) {
+                favorites = favorites.filter(f => f !== id);
+                showToast('تمت الإزالة من المفضلة');
+            } else {
+                favorites.push(id);
+                showToast('تمت الإضافة إلى المفضلة');
+            }
+            localStorage.setItem('msFavorites', JSON.stringify(favorites));
+            document.querySelectorAll(`.fav-btn[data-id="${id}"]`).forEach(btn => btn.classList.toggle('active'));
+            renderFavorites();
+        }
+
+        // ================== 10. Toast ==================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // ================== 11. Theme ==================
+        function toggleTheme() {
+            playSound('click');
+            document.body.classList.toggle('light-mode');
+            const btn = document.getElementById('themeBtn');
+            btn.textContent = document.body.classList.contains('light-mode') ? 'الوضع الليلي' : 'الوضع النهاري';
+            localStorage.setItem('msTheme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        }
+        if (localStorage.getItem('msTheme') === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeBtn').textContent = 'الوضع الليلي';
+        }
+
+        // ================== 12. Discord ==================
+        let isLoggedIn = localStorage.getItem('msLoggedIn') === 'true';
+        function loginDiscord() {
+            playSound('click');
+            const btn = document.getElementById('loginBtn');
+            if (isLoggedIn) {
+                isLoggedIn = false;
+                localStorage.removeItem('msLoggedIn');
+                btn.textContent = 'دخول Discord';
+                btn.classList.remove('logged-in');
+                showToast('تم تسجيل الخروج');
+            } else {
+                isLoggedIn = true;
+                localStorage.setItem('msLoggedIn', 'true');
+                btn.textContent = 'مسجل الدخول';
+                btn.classList.add('logged-in');
+                showToast('تم تسجيل الدخول عبر Discord');
+            }
+        }
+        if (isLoggedIn) {
+            document.getElementById('loginBtn').textContent = 'مسجل الدخول';
+            document.getElementById('loginBtn').classList.add('logged-in');
+        }
+
+        // ================== 13. Side Menu ==================
+        function toggleSideMenu() {
+            playSound('click');
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('sideMenuOverlay');
+            const btn = document.getElementById('hamburgerBtn');
+            menu.classList.toggle('open');
+            overlay.classList.toggle('open');
+            btn.classList.toggle('active');
+        }
+
+        function showSection(sectionId) {
+            ['favorites', 'sounds', 'servers', 'videos', 'tools', 'skins', 'seeds', 'pc', 'mobile', 'mods'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.style.display = 'block';
+                setTimeout(() => target.scrollIntoView({behavior: 'smooth'}), 100);
+            }
+        }
+
+        document.querySelectorAll('.side-menu a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const sectionId = href.substring(1);
+                    if (['favorites', 'sounds', 'servers', 'videos', 'tools', 'skins'].includes(sectionId)) {
+                        showSection(sectionId);
+                    } else {
+                        document.getElementById(sectionId)?.scrollIntoView({behavior: 'smooth'});
+                    }
+                }
+            });
+        });
+
+        // ================== 14. Format Date ==================
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        // ================== 15. PC Versions ==================
+        let pcVersionsData = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        async function fetchPCVersions() {
+            const loader = document.getElementById('pcLoader');
+            const count = document.getElementById('pcCount');
+            try {
+                const response = await fetch('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+                const data = await response.json();
+                pcVersionsData = data.versions.slice(0, 30);
+                loader.classList.remove('active');
+                count.textContent = `${data.versions.length} إصدار متاح`;
+                renderPCVersions();
+                checkNewVersion(data.latest.release);
+            } catch (error) {
+                loader.innerHTML = '<p>فشل الاتصال بالخادم.</p>';
+            }
+        }
+
+        function renderPCVersions() {
+            const grid = document.getElementById('pcGrid');
+            grid.innerHTML = '';
+            let filtered = pcVersionsData.filter(v => {
+                const matchesSearch = v.id.includes(currentSearch);
+                let matchesFilter = true;
+                if (currentFilter === 'release') matchesFilter = v.type === 'release';
+                else if (currentFilter === 'snapshot') matchesFilter = v.type === 'snapshot';
+                else if (currentFilter === 'old') matchesFilter = v.type === 'old_beta' || v.type === 'old_alpha';
+                return matchesSearch && matchesFilter;
+            });
+            filtered.forEach(version => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('onmouseenter', 'playSound("hover")');
+                apply3DEffect(card);
+                const fav = isFavorite(version.id);
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3>${version.id}</h3>
+                        <div class="card-actions-top">
+                            <button class="fav-btn ${fav ? 'active' : ''}" data-id="${version.id}" onclick="toggleFavorite('${version.id}', event)">★</button>
+                            <button class="info-btn" onclick="showPCInfo('${version.id}')">!</button>
+                        </div>
+                    </div>
+                    <button class="download-btn" onclick="downloadPC('${version.url}', '${version.id}')">تحميل</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderPCVersions();
+        });
+
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playSound('click');
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderPCVersions();
+            });
+        });
+
+        async function downloadPC(versionUrl, versionId) {
+            playSound('success');
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'جاري التجهيز...';
+            btn.disabled = true;
+            try {
+                const response = await fetch(versionUrl);
+                const data = await response.json();
+                const clientUrl = data.downloads.client.url;
+                const clientSize = (data.downloads.client.size / 1024 / 1024).toFixed(2);
+                btn.innerHTML = `${clientSize} MB`;
+                const link = document.createElement('a');
+                link.href = clientUrl;
+                link.download = `minecraft-${versionId}-client.jar`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+            } catch (error) {
+                btn.innerHTML = 'فشل';
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+            }
+        }
+
+        function showPCInfo(versionId) {
+            playSound('click');
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            const v = pcVersionsData.find(x => x.id === versionId);
+            if (!v) return;
+            let typeName = 'Release (إصدار رسمي)';
+            if (v.type === 'snapshot') typeName = 'Snapshot (لقطة تجريبية)';
+            else if (v.type === 'old_beta') typeName = 'Old Beta';
+            else if (v.type === 'old_alpha') typeName = 'Old Alpha';
+            title.textContent = `معلومات الإصدار ${v.id}`;
+            body.innerHTML = `
+                <div class="modal-row"><span class="label">رقم الإصدار</span><span class="value highlight">${v.id}</span></div>
+                <div class="modal-row"><span class="label">تاريخ الإصدار</span><span class="value">${formatDate(v.releaseTime)}</span></div>
+                <div class="modal-row"><span class="label">النوع</span><span class="value">${typeName}</span></div>
+                <div class="modal-desc">هذا الإصدار من نوع Java Edition ويعمل على Windows, macOS, Linux.</div>
+            `;
+            modal.classList.add('active');
+        }
+
+        // ================== 16. Mobile Versions ==================
+        let mobileVersionsData = [];
+        let mobileSearch = '';
+        const bedrockVersions = [
+            { id: '1.21.0', date: '2024-06-13', size: '~250 MB', desc: 'أحدث إصدار Bedrock.' },
+            { id: '1.20.81', date: '2024-04-23', size: '~245 MB', desc: 'إصلاحات وتحسينات.' },
+            { id: '1.20.80', date: '2024-03-19', size: '~240 MB', desc: 'محتوى جديد.' },
+            { id: '1.20.70', date: '2024-02-20', size: '~238 MB', desc: 'تحديثات أمنية.' },
+            { id: '1.20.60', date: '2024-01-16', size: '~235 MB', desc: 'إصلاحات متنوعة.' },
+            { id: '1.20.50', date: '2023-12-05', size: '~230 MB', desc: 'تحديث نهاية العام.' },
+            { id: '1.20.40', date: '2023-10-24', size: '~228 MB', desc: 'إضافات جديدة.' },
+            { id: '1.20.30', date: '2023-09-19', size: '~225 MB', desc: 'تحسينات.' },
+            { id: '1.20.15', date: '2023-08-08', size: '~222 MB', desc: 'إصلاحات.' },
+            { id: '1.20.10', date: '2023-07-11', size: '~220 MB', desc: 'تحديث صيفي.' },
+            { id: '1.20.0', date: '2023-06-07', size: '~218 MB', desc: 'إصدار رئيسي.' },
+            { id: '1.19.80', date: '2023-04-26', size: '~215 MB', desc: 'تحديث قديم.' }
+        ];
+
+        function fetchMobileVersions() {
+            const loader = document.getElementById('mobileLoader');
+            const count = document.getElementById('mobileCount');
+            mobileVersionsData = bedrockVersions;
+            setTimeout(() => {
+                loader.classList.remove('active');
+                count.textContent = `${bedrockVersions.length} إصدار متاح`;
+                renderMobileVersions();
+            }, 500);
+        }
+
+        function renderMobileVersions() {
+            const grid = document.getElementById('mobileGrid');
+            grid.innerHTML = '';
+            const filtered = mobileVersionsData.filter(v => v.id.includes(mobileSearch));
+            filtered.forEach(version => {
+                const card = document.createElement('div');
+                card.className = 'card bedrock-card';
+                card.setAttribute('onmouseenter', 'playSound("hover")');
+                apply3DEffect(card);
+                const fav = isFavorite('bedrock-' + version.id);
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3>${version.id}</h3>
+                        <div class="card-actions-top">
+                            <button class="fav-btn ${fav ? 'active' : ''}" data-id="bedrock-${version.id}" onclick="toggleFavorite('bedrock-${version.id}', event)">★</button>
+                            <button class="info-btn bedrock-info" onclick="showMobileInfo('${version.id}')">!</button>
+                        </div>
+                    </div>
+                    <a href="https://www.minecraft.net/en-us/download" target="_blank" class="download-btn bedrock-dl" onclick="playSound('success')">تحميل</a>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        document.getElementById('mobileSearch').addEventListener('input', (e) => {
+            mobileSearch = e.target.value;
+            renderMobileVersions();
+        });
+
+        function showMobileInfo(versionId) {
+            playSound('click');
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            const v = mobileVersionsData.find(x => x.id === versionId);
+            if (!v) return;
+            title.textContent = `معلومات الإصدار ${v.id}`;
+            body.innerHTML = `
+                <div class="modal-row"><span class="label">رقم الإصدار</span><span class="value highlight">${v.id}</span></div>
+                <div class="modal-row"><span class="label">تاريخ الإصدار</span><span class="value">${formatDate(v.date)}</span></div>
+                <div class="modal-row"><span class="label">الحجم</span><span class="value">${v.size}</span></div>
+                <div class="modal-row"><span class="label">النوع</span><span class="value" style="color:var(--bedrock);">Bedrock Edition</span></div>
+                <div class="modal-desc">${v.desc}<br><br>يعمل على: Android, iOS, Windows, Xbox, PlayStation.</div>
+            `;
+            modal.classList.add('active');
+        }
+
+        // ================== 17. Mods ==================
+        async function fetchMods() {
+            const grid = document.getElementById('modsGrid');
+            const loader = document.getElementById('modsLoader');
+            const count = document.getElementById('modsCount');
+            try {
+                const response = await fetch('https://api.modrinth.com/v2/search?limit=20&facets=[["project_type:mod"]]&index=downloads');
+                const data = await response.json();
+                loader.classList.remove('active');
+                count.textContent = `${data.total_hits.toLocaleString()} مود متاح`;
+                data.hits.forEach(mod => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.setAttribute('onmouseenter', 'playSound("hover")');
+                    apply3DEffect(card);
+                    const fav = isFavorite(mod.project_id);
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3>${mod.title}</h3>
+                            <div class="card-actions-top">
+                                <button class="fav-btn ${fav ? 'active' : ''}" data-id="${mod.project_id}" onclick="toggleFavorite('${mod.project_id}', event)">★</button>
+                                <button class="info-btn" onclick="showModInfo('${mod.project_id}')">!</button>
+                            </div>
+                        </div>
+                        <div class="card-meta">
+                            <span>${mod.downloads.toLocaleString()} تحميل</span>
+                        </div>
+                        <a href="https://modrinth.com/mod/${mod.slug}" target="_blank" class="download-btn" onclick="playSound('success')">تحميل</a>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                loader.innerHTML = '<p>فشل الاتصال بـ Modrinth.</p>';
+            }
+        }
+
+        function showModInfo(projectId) {
+            playSound('click');
+            fetch(`https://api.modrinth.com/v2/project/${projectId}`)
+                .then(r => r.json())
+                .then(mod => {
+                    const modal = document.getElementById('modalOverlay');
+                    const title = document.getElementById('modalTitle');
+                    const body = document.getElementById('modalBody');
+                    title.textContent = `معلومات: ${mod.title}`;
+                    body.innerHTML = `
+                        <div class="modal-row"><span class="label">الاسم</span><span class="value highlight">${mod.title}</span></div>
+                        <div class="modal-row"><span class="label">التحميلات</span><span class="value">${mod.downloads.toLocaleString()}</span></div>
+                        <div class="modal-row"><span class="label">المتابعون</span><span class="value">${mod.followers.toLocaleString()}</span></div>
+                        <div class="modal-row"><span class="label">النوع</span><span class="value">${mod.loaders.join(', ')}</span></div>
+                        <div class="modal-desc">${mod.description}</div>
+                    `;
+                    modal.classList.add('active');
+                });
+        }
+
+        // ================== 18. Seeds ==================
+        const seedsData = [
+            { name: 'قرية بجانب معبد', seed: '123456789', version: '1.21', rating: 5, category: 'village', icon: '🏘️', desc: 'قرية كبيرة بجانب معبد مهجور مباشرة.' },
+            { name: 'جزيرة فطرية نادرة', seed: '-987654321', version: '1.20', rating: 4, category: 'rare', icon: '🍄', desc: 'جزيرة فطرية وسط المحيط.' },
+            { name: 'قلعة تحت الأرض', seed: '555555555', version: '1.21', rating: 5, category: 'survival', icon: '🏰', desc: 'قلعة ضخمة تحت الأرض مليئة بالكنوز.' },
+            { name: 'أرضية الجليد الأبدي', seed: '777777777', version: '1.20', rating: 3, category: 'survival', icon: '❄️', desc: 'منطقة جليدية واسعة.' },
+            { name: 'قرية الصحراء الذهبية', seed: '111222333', version: '1.21', rating: 4, category: 'village', icon: '🏜️', desc: 'قرية صحراوية بجانب معبدين.' },
+            { name: 'مدينة End القديمة', seed: '999888777', version: '1.19', rating: 5, category: 'rare', icon: '🌌', desc: 'مدينة End ضخمة قريبة.' },
+            { name: 'غابة Mushroom', seed: '444555666', version: '1.20', rating: 4, category: 'rare', icon: '🌳', desc: 'غابة فطرية بجانب قرية.' },
+            { name: 'وادي الجبال الثلاثة', seed: '333222111', version: '1.21', rating: 3, category: 'survival', icon: '⛰️', desc: 'جبال شاهقة بواجهة رائعة.' },
+            { name: 'قرية الجليد', seed: '666777888', version: '1.20', rating: 4, category: 'village', icon: '🏔️', desc: 'قرية ثلجية بجانب igloo.' },
+            { name: 'جزيرة الكنز', seed: '222333444', version: '1.21', rating: 5, category: 'rare', icon: '🏝️', desc: 'جزيرة صغيرة بها كنز مخفي.' },
+            { name: 'معبد الغابة', seed: '888999000', version: '1.19', rating: 3, category: 'village', icon: '🌲', desc: 'معبد داخل غابة كثيفة.' },
+            { name: 'أرض الوحوش', seed: '121212121', version: '1.21', rating: 5, category: 'survival', icon: '👹', desc: 'منطقة مليئة بالوحوش والكنوز.' }
+        ];
+
+        let seedFilter = 'all';
+        let seedSearchTerm = '';
+
+        function renderSeeds() {
+            const grid = document.getElementById('seedsGrid');
+            const loader = document.getElementById('seedsLoader');
+            const count = document.getElementById('seedsCount');
+            loader.classList.remove('active');
+            count.textContent = `${seedsData.length} بذرة متاحة`;
+            grid.innerHTML = '';
+
+            const filtered = seedsData.filter(s => {
+                const matchesSearch = s.name.includes(seedSearchTerm) || s.seed.includes(seedSearchTerm);
+                const matchesFilter = seedFilter === 'all' || s.category === seedFilter;
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="color:var(--stone); text-align:center; padding:30px; grid-column: 1/-1;">لا توجد بذور مطابقة.</p>';
+                return;
+            }
+
+            filtered.forEach(seed => {
+                const card = document.createElement('div');
+                card.className = 'card seed-card';
+                card.setAttribute('onmouseenter', 'playSound("hover")');
+                apply3DEffect(card);
+                const fav = isFavorite('seed-' + seed.seed);
+                const stars = Array(5).fill(0).map((_, i) => 
+                    `<span class="star ${i < seed.rating ? 'filled' : ''}">★</span>`
+                ).join('');
+                card.innerHTML = `
+                    <div class="seed-preview">${seed.icon}</div>
+                    <div class="card-header">
+                        <h3>${seed.name}</h3>
+                        <div class="card-actions-top">
+                            <button class="fav-btn ${fav ? 'active' : ''}" data-id="seed-${seed.seed}" onclick="toggleFavorite('seed-${seed.seed}', event)">★</button>
+                            <button class="info-btn seed-info" onclick="showSeedInfo('${seed.seed}')">!</button>
+                        </div>
+                    </div>
+                    <div class="seed-rating">${stars}</div>
+                    <div class="seed-code">${seed.seed}</div>
+                    <button class="download-btn seed-copy" onclick="copySeed('${seed.seed}', event)">📋 نسخ البذرة</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function copySeed(seed, event) {
+            event.stopPropagation();
+            playSound('success');
+            navigator.clipboard.writeText(seed).then(() => {
+                showToast(`تم نسخ البذرة: ${seed}`);
+            }).catch(() => {
+                showToast('فشل النسخ، انسخ يدوياً');
+            });
+        }
+
+        function showSeedInfo(seedCode) {
+            playSound('click');
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            const s = seedsData.find(x => x.seed === seedCode);
+            if (!s) return;
+            const stars = '★'.repeat(s.rating) + '☆'.repeat(5 - s.rating);
+            title.textContent = `معلومات: ${s.name}`;
+            body.innerHTML = `
+                <div class="modal-row"><span class="label">الاسم</span><span class="value highlight">${s.name}</span></div>
+                <div class="modal-row"><span class="label">البذرة</span><span class="value" style="font-family:monospace;">${s.seed}</span></div>
+                <div class="modal-row"><span class="label">الإصدار</span><span class="value">${s.version}</span></div>
+                <div class="modal-row"><span class="label">التقييم</span><span class="value" style="color:var(--gold);">${stars}</span></div>
+                <div class="modal-row"><span class="label">الفئة</span><span class="value">${s.category === 'village' ? 'قرية' : s.category === 'rare' ? 'نادرة' : 'بقاء'}</span></div>
+                <div class="modal-desc">${s.desc}</div>
+            `;
+            modal.classList.add('active');
+        }
+
+        document.getElementById('seedSearch').addEventListener('input', (e) => {
+            seedSearchTerm = e.target.value;
+            renderSeeds();
+        });
+
+        document.querySelectorAll('.filter-btn[data-seedfilter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playSound('click');
+                document.querySelectorAll('.filter-btn[data-seedfilter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                seedFilter = btn.dataset.seedfilter;
+                renderSeeds();
+            });
+        });
+
+        // ================== 19. Skins ==================
+        const skinsData = [
+            { name: 'Steve الأصلي', category: 'hero', emoji: '🧑', color: '#4a90d9' },
+            { name: 'Alex', category: 'hero', emoji: '👩', color: '#e8a87c' },
+            { name: 'Creeper', category: 'mob', emoji: '💚', color: '#4caf30' },
+            { name: 'Enderman', category: 'mob', emoji: '🖤', color: '#1a1a1a' },
+            { name: 'Zombie', category: 'mob', emoji: '🧟', color: '#5a8a3a' },
+            { name: 'Skeleton', category: 'mob', emoji: '💀', color: '#cccccc' },
+            { name: 'Herobrine', category: 'hero', emoji: '👻', color: '#ffffff' },
+            { name: 'Notch', category: 'hero', emoji: '👑', color: '#f0c040' },
+            { name: 'Pig', category: 'cute', emoji: '🐷', color: '#ffb6c1' },
+            { name: 'Cat', category: 'cute', emoji: '🐱', color: '#ffa500' },
+            { name: 'Dog (Wolf)', category: 'cute', emoji: '🐶', color: '#d3d3d3' },
+            { name: 'Villager', category: 'mob', emoji: '🧑‍🌾', color: '#8b4513' },
+            { name: 'Witch', category: 'mob', emoji: '🧙', color: '#6a0dad' },
+            { name: 'Ninja', category: 'hero', emoji: '🥷', color: '#2c3e50' },
+            { name: 'Knight', category: 'hero', emoji: '⚔️', color: '#7f8c8d' },
+            { name: 'Panda', category: 'cute', emoji: '🐼', color: '#ffffff' }
+        ];
+
+        let skinFilter = 'all';
+        let skinSearchTerm = '';
+
+        function renderSkins() {
+            const grid = document.getElementById('skinsGrid');
+            const loader = document.getElementById('skinsLoader');
+            const count = document.getElementById('skinsCount');
+            loader.classList.remove('active');
+            count.textContent = `${skinsData.length} سكن متاح`;
+            grid.innerHTML = '';
+
+            const filtered = skinsData.filter(s => {
+                const matchesSearch = s.name.includes(skinSearchTerm);
+                const matchesFilter = skinFilter === 'all' || s.category === skinFilter;
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="color:var(--stone); text-align:center; padding:30px; grid-column: 1/-1;">لا توجد سكنات مطابقة.</p>';
+                return;
+            }
+
+            filtered.forEach(skin => {
+                const card = document.createElement('div');
+                card.className = 'skin-card';
+                card.setAttribute('onmouseenter', 'playSound("hover")');
+                const catName = skin.category === 'hero' ? 'أبطال' : skin.category === 'mob' ? 'وحوش' : 'لطيف';
+                card.innerHTML = `
+                    <div class="skin-preview" style="background: linear-gradient(135deg, ${skin.color}, #1a1a1a);">
+                        ${skin.emoji}
+                    </div>
+                    <h4>${skin.name}</h4>
+                    <span class="skin-category">${catName}</span>
+                    <button class="skin-dl-btn" onclick="downloadSkin('${skin.name}', event)">تحميل</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function downloadSkin(name, event) {
+            event.stopPropagation();
+            playSound('success');
+            showToast(`جاري تحميل سكن: ${name}`);
+        }
+
+        document.getElementById('skinSearch').addEventListener('input', (e) => {
+            skinSearchTerm = e.target.value;
+            renderSkins();
+        });
+
+        document.querySelectorAll('.filter-btn[data-skinfilter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playSound('click');
+                document.querySelectorAll('.filter-btn[data-skinfilter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                skinFilter = btn.dataset.skinfilter;
+                renderSkins();
+            });
+        });
+
+        // ================== 20. Tools ==================
+        function calcEnchantment() {
+            playSound('click');
+            const level = parseInt(document.getElementById('enchLevel').value) || 30;
+            const books = parseInt(document.getElementById('enchBooks').value) || 1;
+            const baseXP = level * 10;
+            const total = baseXP * books;
+            document.getElementById('enchResult').innerHTML = 
+                `${total} نقطة خبرة<small>${books} كتاب × ${level} مستوى</small>`;
+        }
+
+        function generateCommand() {
+            playSound('click');
+            const type = document.getElementById('cmdType').value;
+            const target = document.getElementById('cmdTarget').value || '@p';
+            const value = document.getElementById('cmdValue').value || 'diamond 1';
+            let cmd = '';
+            if (type === 'give') cmd = `/give ${target} ${value}`;
+            else if (type === 'tp') cmd = `/tp ${target} ${value}`;
+            else if (type === 'summon') cmd = `/summon ${value} ~ ~ ~`;
+            else if (type === 'effect') cmd = `/effect give ${target} ${value}`;
+            document.getElementById('cmdResult').textContent = cmd;
+        }
+
+        function calcPotion() {
+            playSound('click');
+            const type = document.getElementById('potionType').value;
+            const duration = parseInt(document.getElementById('potionDuration').value) || 180;
+            const names = {
+                healing: 'شفاء فوري',
+                strength: 'قوة +3',
+                speed: 'سرعة +20%',
+                fire_resistance: 'مقاومة نار',
+                night_vision: 'رؤية ليلية',
+                invisibility: 'اختفاء'
+            };
+            document.getElementById('potionResult').innerHTML = 
+                `${names[type]}<small>المدة: ${duration} ثانية</small>`;
+        }
+
+        function calcXP() {
+            playSound('click');
+            const from = parseInt(document.getElementById('xpFrom').value) || 0;
+            const to = parseInt(document.getElementById('xpTo').value) || 30;
+            let totalXP = 0;
+            for (let i = from + 1; i <= to; i++) {
+                if (i <= 16) totalXP += 2 * i + 7;
+                else if (i <= 31) totalXP += 5 * i - 38;
+                else totalXP += 9 * i - 158;
+            }
+            document.getElementById('xpResult').innerHTML = 
+                `${totalXP} نقطة خبرة<small>من ${from} إلى ${to}</small>`;
+        }
+
+        // ================== 21. Servers ==================
+        const serversData = [
+            { name: 'Hypixel', ip: 'mc.hypixel.net', online: '45,000 لاعب', icon: 'H' },
+            { name: 'Mineplex', ip: 'us.mineplex.com', online: '12,000 لاعب', icon: 'M' },
+            { name: 'The Hive', ip: 'play.hivemc.com', online: '8,500 لاعب', icon: 'T' },
+            { name: 'CubeCraft', ip: 'play.cubecraft.net', online: '6,200 لاعب', icon: 'C' },
+            { name: '2b2t', ip: 'connect.2b2t.org', online: '800 لاعب', icon: '2' },
+            { name: 'Wynncraft', ip: 'play.wynncraft.com', online: '2,500 لاعب', icon: 'W' },
+            { name: 'Purple Prison', ip: 'play.purpleprison.net', online: '1,200 لاعب', icon: 'P' },
+            { name: 'ManaCube', ip: 'play.manacube.com', online: '1,800 لاعب', icon: 'M' },
+            { name: 'ComplexGaming', ip: 'play.complexgaming.net', online: '3,400 لاعب', icon: 'C' },
+            { name: 'SkyBlock', ip: 'mc.skyblock.net', online: '5,000 لاعب', icon: 'S' }
+        ];
+
+        function renderServers() {
+            const grid = document.getElementById('serversGrid');
+            serversData.forEach(server => {
+                const card = document.createElement('div');
+                card.className = 'server-card';
+                card.setAttribute('onmouseenter', 'playSound("hover")');
+                card.innerHTML = `
+                    <div class="server-icon">${server.icon}</div>
+                    <div class="server-info">
+                        <h4>${server.name}</h4>
+                        <div class="ip">${server.ip}</div>
+                        <div class="online">${server.online}</div>
+                    </div>
+                    <button class="copy-btn" onclick="copyIP('${server.ip}', event)">نسخ</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function copyIP(ip, event) {
+            event.stopPropagation();
+            playSound('success');
+            navigator.clipboard.writeText(ip);
+            showToast(`تم نسخ IP: ${ip}`);
+        }
+
+        // ================== 22. Videos ==================
+        const videosData = [
+            { title: 'أفضل 10 مودات 2024', channel: 'Minecraft Arabic', videoId: 'dQw4w9WgXcQ' },
+            { title: 'بناء بيت أسطوري', channel: 'Grian', videoId: 'dQw4w9WgXcQ' },
+            { title: 'شرح Redstone للمبتدئين', channel: 'Mumbo Jumbo', videoId: 'dQw4w9WgXcQ' },
+            { title: 'اكتشاف أندر البذور', channel: 'Dream', videoId: 'dQw4w9WgXcQ' },
+            { title: '100 يوم في Hardcore', channel: 'Technoblade', videoId: 'dQw4w9WgXcQ' },
+            { title: 'بناء مدينة كاملة', channel: 'Keralis', videoId: 'dQw4w9WgXcQ' },
+            { title: 'التحديث 1.21 الجديد', channel: 'Mojang', videoId: 'dQw4w9WgXcQ' },
+            { title: 'أسرع طريقة للـ Nether', channel: 'Philza', videoId: 'dQw4w9WgXcQ' }
+        ];
+
+        function renderVideos() {
+            const grid = document.getElementById('videosGrid');
+            const loader = document.getElementById('videosLoader');
+            const count = document.getElementById('videosCount');
+            setTimeout(() => {
+                loader.classList.remove('active');
+                count.textContent = `${videosData.length} فيديو متاح`;
+                videosData.forEach(video => {
+                    const card = document.createElement('div');
+                    card.className = 'card video-card';
+                    apply3DEffect(card);
+                    card.innerHTML = `
+                        <div class="video-thumb" onclick="window.open('https://youtube.com/watch?v=${video.videoId}', '_blank')">
+                            <span class="play-icon">▶</span>
+                        </div>
+                        <div class="video-info">
+                            <h4>${video.title}</h4>
+                            <div class="channel">${video.channel}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }, 800);
+        }
+
+        // ================== 23. Soundboard ==================
+        const soundboardData = [
+            { name: 'Creeper', key: 'creeper' },
+            { name: 'XP', key: 'xp' },
+            { name: 'Enderman', key: 'enderman' },
+            { name: 'صندوق', key: 'chest' },
+            { name: 'Villager', key: 'villager' },
+            { name: 'Ghast', key: 'ghast' },
+            { name: 'Zombie', key: 'zombie' },
+            { name: 'Click', key: 'click' },
+            { name: 'Pop', key: 'success' }
+        ];
+
+        function renderSoundboard() {
+            const grid = document.getElementById('soundboardGrid');
+            soundboardData.forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = 'sound-btn';
+                btn.innerHTML = `<div class="sound-icon">♪</div><div>${s.name}</div>`;
+                btn.addEventListener('click', () => {
+                    playSound(s.key);
+                    btn.classList.add('playing');
+                    setTimeout(() => btn.classList.remove('playing'), 600);
+                });
+                grid.appendChild(btn);
+            });
+        }
+
+        // ================== 24. Favorites ==================
+        function renderFavorites() {
+            const grid = document.getElementById('favGrid');
+            const count = document.getElementById('favCount');
+            if (!grid) return;
+            grid.innerHTML = '';
+            count.textContent = `${favorites.length} عنصر`;
+            if (favorites.length === 0) {
+                grid.innerHTML = '<p style="color:var(--stone); text-align:center; padding:30px; grid-column: 1/-1;">لا توجد عناصر في المفضلة بعد.</p>';
+                return;
+            }
+            favorites.forEach(id => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                apply3DEffect(card);
+                const pcV = pcVersionsData.find(x => x.id === id);
+                const mobV = mobileVersionsData.find(x => 'bedrock-' + x.id === id);
+                const seedV = seedsData.find(x => 'seed-' + x.seed === id);
+                if (pcV) {
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3>${pcV.id}</h3>
+                            <div class="card-actions-top">
+                                <button class="fav-btn active" onclick="toggleFavorite('${pcV.id}', event)">★</button>
+                                <button class="info-btn" onclick="showPCInfo('${pcV.id}')">!</button>
+                            </div>
+                        </div>
+                        <button class="download-btn" onclick="downloadPC('${pcV.url}', '${pcV.id}')">تحميل</button>
+                    `;
+                } else if (mobV) {
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3>${mobV.id} (Bedrock)</h3>
+                            <div class="card-actions-top">
+                                <button class="fav-btn active" onclick="toggleFavorite('bedrock-${mobV.id}', event)">★</button>
+                                <button class="info-btn bedrock-info" onclick="showMobileInfo('${mobV.id}')">!</button>
+                            </div>
+                        </div>
+                        <a href="https://www.minecraft.net/en-us/download" target="_blank" class="download-btn bedrock-dl">تحميل</a>
+                    `;
+                } else if (seedV) {
+                    card.className = 'card seed-card';
+                    card.innerHTML = `
+                        <div class="seed-preview">${seedV.icon}</div>
+                        <div class="card-header">
+                            <h3>${seedV.name}</h3>
+                            <div class="card-actions-top">
+                                <button class="fav-btn active" onclick="toggleFavorite('seed-${seedV.seed}', event)">★</button>
+                                <button class="info-btn seed-info" onclick="showSeedInfo('${seedV.seed}')">!</button>
+                            </div>
+                        </div>
+                        <div class="seed-code">${seedV.seed}</div>
+                        <button class="download-btn seed-copy" onclick="copySeed('${seedV.seed}', event)">📋 نسخ</button>
+                    `;
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        // ================== 25. Modal ==================
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            playSound('click');
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') document.getElementById('modalOverlay').classList.remove('active');
+        });
+
+        // ================== 26. Scroll Top ==================
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('scrollTop');
+            if (window.scrollY > 400) btn.classList.add('visible');
+            else btn.classList.remove('visible');
+        });
+
+        // ================== 27. Notifications System ==================
+        let notifications = JSON.parse(localStorage.getItem('msNotifications') || '[]');
+        let unreadCount = 0;
+
+        function addNotification(title, message) {
+            const notif = {
+                id: Date.now(),
+                title: title,
+                message: message,
+                time: new Date().toLocaleString('ar-EG'),
+                unread: true
+            };
+            notifications.unshift(notif);
+            if (notifications.length > 20) notifications = notifications.slice(0, 20);
+            localStorage.setItem('msNotifications', JSON.stringify(notifications));
+            updateNotifUI();
+        }
+
+        function updateNotifUI() {
+            const body = document.getElementById('notifBody');
+            const badge = document.getElementById('bellBadge');
+            unreadCount = notifications.filter(n => n.unread).length;
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                badge.classList.add('show');
+            } else {
+                badge.classList.remove('show');
+            }
+            if (notifications.length === 0) {
+                body.innerHTML = '<div class="notif-empty">لا توجد إشعارات</div>';
+                return;
+            }
+            body.innerHTML = notifications.map(n => `
+                <div class="notif-item ${n.unread ? 'unread' : ''}">
+                    <div class="ni-title">${n.title}</div>
+                    <div class="ni-time">${n.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleNotifPanel() {
+            playSound('click');
+            const panel = document.getElementById('notifPanel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) {
+                notifications.forEach(n => n.unread = false);
+                localStorage.setItem('msNotifications', JSON.stringify(notifications));
+                setTimeout(updateNotifUI, 500);
+            }
+        }
+
+        function clearAllNotifications() {
+            playSound('click');
+            notifications = [];
+            localStorage.setItem('msNotifications', JSON.stringify(notifications));
+            updateNotifUI();
+            showToast('تم مسح جميع الإشعارات');
+        }
+
+        // ================== 28. Version Notification ==================
+        let lastCheckedVersion = localStorage.getItem('msLastVersion') || '';
+
+        function checkNewVersion(latestVersion) {
+            if (lastCheckedVersion !== latestVersion && lastCheckedVersion !== '') {
+                // إصدار جديد
+                const title = '🎉 إصدار جديد متاح!';
+                const msg = `Minecraft ${latestVersion} متاح الآن للتحميل`;
+                addNotification(title, msg);
+                showVersionNotif(title, `Minecraft ${latestVersion}`);
+            }
+            localStorage.setItem('msLastVersion', latestVersion);
+            lastCheckedVersion = latestVersion;
+        }
+
+        function showVersionNotif(title, subtitle) {
+            const notif = document.getElementById('versionNotif');
+            document.getElementById('vnTitle').textContent = title;
+            document.getElementById('vnSub').textContent = subtitle;
+            notif.classList.add('show');
+            playSound('success');
+            setTimeout(() => hideVersionNotif(), 6000);
+        }
+
+        function hideVersionNotif() {
+            document.getElementById('versionNotif').classList.remove('show');
+        }
+
+        // فحص الإصدارات الجديدة كل ساعة
+        setInterval(async () => {
+            try {
+                const res = await fetch('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+                const data = await res.json();
+                const latest = data.latest.release;
+                if (lastCheckedVersion && lastCheckedVersion !== latest) {
+                    const title = '🎉 إصدار جديد متاح!';
+                    const msg = `Minecraft ${latest} متاح الآن`;
+                    addNotification(title, msg);
+                    showVersionNotif(title, `Minecraft ${latest}`);
+                    lastCheckedVersion = latest;
+                    localStorage.setItem('msLastVersion', latest);
+                }
+            } catch (e) {}
+        }, 3600000);
+
+        // ================== 29. Music Restore ==================
+        if (localStorage.getItem('msMusic') === 'on') {
+            // نحتاج تفاعل المستخدم أولاً
+            document.addEventListener('click', function startMusicOnce() {
+                if (!musicPlaying) {
+                    bgMusic.play();
+                    musicPlaying = true;
+                    document.getElementById('musicBtn').textContent = '⏸ إيقاف الموسيقى';
+                    document.getElementById('musicBtn').classList.add('playing');
+                }
+                document.removeEventListener('click', startMusicOnce);
+            }, { once: true });
+        }
+
+        // ================== 30. Init ==================
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchPCVersions();
+            fetchMobileVersions();
+            fetchMods();
+            renderServers();
+            renderVideos();
+            renderSoundboard();
+            renderFavorites();
+            renderSeeds();
+            renderSkins();
+            updateNotifUI();
+
+            // إشعار ترحيبي
+            if (notifications.length === 0) {
+                addNotification('👋 مرحباً بك في MineSphere', 'استكشف آلاف الإصدارات والمودات والبذور!');
+            }
+        });
+    </script>
+</body>
+</html>
